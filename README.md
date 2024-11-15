@@ -1,39 +1,29 @@
-# large scale data management
+# Projet PageRank 2024-2025
 
-Page rank in Pig, based on https://gist.github.com/jwills/2047314
-Modified for running on Google Cloud Dataproc.
+Autheurs :
+- BLAUDEAU Matthieu
+- BROSSARD Victor
+- HAJJI Amin
 
-## data
+## Description du Projet
+Ce projet, réalisé dans le cadre du cours **Gestion des données distribuées à large échelle** de **Pascal Molli**, a pour objectif d'évaluer les performances de l'algorithme PageRank en comparant deux implémentations :
+- **PySpark DataFrame**
+- **PySpark RDD**
 
-Data are supposed to be upload fist on Google Cloud Storage.
+## Objectifs
+1. Comparer les performances entre **DataFrame** et **RDD** avec et sans partitionnement.
+2. Tester différentes configurations de clusters :
+   - 1 nœud
+   - 2 nœuds
+   - 4 nœuds  
+   (en maintenant une parité matérielle : CPU/RAM par nœud constante).
+3. Identifier l'entité avec le **plus grand score de PageRank**.
 
-We need to create a root bucket to store you data and code
+## Implémentation
+Nous nous sommes inspiré du code disponible sur ce GitHub :  
+[https://github.com/momo54/large_scale_data_management](https://github.com/momo54/large_scale_data_management)
 
-```
-gcloud storage buckets create gs://BUCKET_NAME --project=PROJECT_ID  --location=europe-west1 --uniform-bucket-level-access
-```
+## Résultats
 
-Next you can copy data/code using gstutils (see run.sh)
-
-
-Full Data are available at: http://downloads.dbpedia.org/3.5.1/en/page_links_en.nt.bz2 (keep it compressed). 
-
-```
-bzcat page_links_en.nt.bz2 | wc -l
- 119077682
-```
-
-
-## Running
-
-Ensure data and code are uploaded.
-Next update dataproc.py accordingly then run.
-
-Do not forget to stop your cluster at when job is finished.
-
-hints: 1 master / 2 slaves on page_links
-
-```
-2022-09-22 17:10:37,648 [main] INFO  org.apache.pig.Main - Pig script completed in 1 hour, 16 minutes, 49 seconds and 944 milliseconds (4609944 ms)
-```
+TO DO
 
