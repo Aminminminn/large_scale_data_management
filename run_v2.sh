@@ -34,15 +34,20 @@ run_job() {
   local partitioning=$3
   echo "Running job on cluster: $cluster_name with implementation: $implementation and partitioning: $partitioning..."
   
-  # Passer les arguments d'implémentation et de partitionnement via variables d'environnement
-  gcloud dataproc jobs submit pyspark $PYSPARK_SCRIPT \
+  # Lancer le job et capturer l'ID du job
+  job_id=$(gcloud dataproc jobs submit pyspark $PYSPARK_SCRIPT \
     --cluster $cluster_name \
     --region $REGION \
+    --format="value(reference.jobId)" \
     -- \
     --implementation $implementation \
     --partitioning $partitioning \
     --data-path $DATA_PATH \
-    --output-path $OUTPUT_DIR/$implementation/$partitioning/
+    --output-path $OUTPUT_DIR/$implementation/$partitioning/)
+
+  # Attendre la fin du job
+  echo "Waiting for job $job_id to complete..."
+  gcloud dataproc jobs wait $job_id --region $REGION
 }
 
 # Fonction pour supprimer un cluster
