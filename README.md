@@ -27,5 +27,5 @@ Nous nous sommes inspiré du code disponible sur ce GitHub :
 
 Pour lancer les scripts bash, il faut spécifier en premier argument l'id du projet. Les résultats de temps s'affichent alors dans le terminal (entre les autres outputs)
 
-Le temps total d'execution du programme python pagerank_dataframe est de 99s.
-Pour ce qui est de l'autre algorithme nous n'avons pas réussi à résoudre un problème qui nous a empecher d'obtenir les informations attendues
+Le temps total d'exécution du programme python pagerank_dataframe est de 99s.
+Pour ce qui est de l'autre algorithme, nous n'avons pas réussi à résoudre un problème qui nous a empêché d'obtenir les informations attendues.
