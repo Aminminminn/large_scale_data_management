@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configurable variables
-PROJECT_ID="A MODIFIER"
+PROJECT_ID= $1
 BUCKET_NAME="bucket_pyspark"
 CLUSTER_NAME="pyspark-cluster"
 REGION="europe-west1"
@@ -36,13 +36,16 @@ from pyspark.sql.functions import col, lit, sum as spark_sum
 
 def parse_neighbors(line):
     """Parses a URL pair string into (URL, neighbor)."""
-    parts = re.split(r'\\s+', line)
+    parts = re.split(r'\s+', line)
     return parts[0], parts[2]
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: pagerank <file> <iterations>", file=sys.stderr)
         sys.exit(-1)
+
+    # Start timer for the script execution
+    script_start_time = time.time()
 
     start_time = time.time()
 
@@ -63,23 +66,27 @@ if __name__ == "__main__":
         ranks_df = contribs_df.groupBy("url").agg(spark_sum("contrib").alias("rank"))
         ranks_df = ranks_df.withColumn("rank", ranks_df["rank"] * 0.85 + 0.15)
 
-    output_path = "gs://$BUCKET_NAME/$OUTPUT_PATH"
+    output_path = "gs://bucket_pyspark/output_dataframe"
     ranks_df.write.mode("overwrite").csv(output_path)
 
-    # Calculate execution time
-    execution_time = time.time() - start_time
+    # Calculate the execution time for the Spark job
+    spark_execution_time = time.time() - start_time
+    print(f"Spark job execution time: {spark_execution_time:.2f} seconds")
 
-    # Save execution time to a file
-    time_output_path = f"{output_path}/execution_time.txt"
-    with open("/tmp/execution_time.txt", "w") as f:
-        f.write(f"Execution time (seconds): {execution_time:.2f}")
-    spark.sparkContext._jvm.org.apache.hadoop.fs.FileSystem.get(
-        spark._jsc.hadoopConfiguration()
-    ).copyFromLocalFile(False, True, "/tmp/execution_time.txt", time_output_path)
-
+    # Stop Spark session
     spark.stop()
-EOF
 
+    # Calculate the total script execution time
+    total_script_time = time.time() - script_start_time
+
+    # Save the execution times to a local file
+    with open("execution_time.txt", "w") as f:
+        f.write(f"Spark job execution time (seconds): {spark_execution_time:.2f}\n")
+        f.write(f"Total script execution time (seconds): {total_script_time:.2f}\n")
+
+    # Print the execution times
+    print(f"Total script execution time: {total_script_time:.2f} seconds")
+EOF
 # Create a minimal Dataproc cluster
 gcloud dataproc clusters create $CLUSTER_NAME \
     --region=$REGION \

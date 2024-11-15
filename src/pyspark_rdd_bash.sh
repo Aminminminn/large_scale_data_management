@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configurable variables
-PROJECT_ID="A MODIFIER"
+PROJECT_ID= $1
 BUCKET_NAME="bucket_pyspark"
 CLUSTER_NAME="pyspark-cluster"
 REGION="europe-west1"
@@ -53,38 +53,60 @@ if __name__ == "__main__":
         print("Usage: pagerank <file> <iterations>", file=sys.stderr)
         sys.exit(-1)
 
+    # Start the overall timer for the script
     start_time = time.time()
 
+    # Start the Spark session
+    spark_start_time = time.time()
     spark = SparkSession.builder.appName("PythonPageRank").getOrCreate()
+    spark_init_time = time.time() - spark_start_time  # Time taken to initialize Spark
 
+    # Read input parameters
     input_path = sys.argv[1]
     iterations = int(sys.argv[2])
 
+    # Start loading data timer
+    data_load_start_time = time.time()
     lines = spark.read.text(input_path).rdd.map(lambda r: r[0])
-
     links = lines.map(lambda urls: parseNeighbors(urls)).distinct().groupByKey().cache()
-
     ranks = links.map(lambda url_neighbors: (url_neighbors[0], 1.0))
+    data_load_time = time.time() - data_load_start_time  # Time taken to load data
 
+    # Start PageRank computation timer
+    pagerank_start_time = time.time()
     for iteration in range(iterations):
         contribs = links.join(ranks).flatMap(lambda url_urls_rank: computeContribs(
             url_urls_rank[1][0], url_urls_rank[1][1]  # type: ignore[arg-type]
         ))
 
         ranks = contribs.reduceByKey(add).mapValues(lambda rank: rank * 0.85 + 0.15)
+    pagerank_time = time.time() - pagerank_start_time  # Time taken to compute PageRank
 
+    # Start saving results timer
+    save_start_time = time.time()
     output_path = "gs://$BUCKET_NAME/$OUTPUT_PATH"
     ranks.saveAsTextFile(output_path)
+    save_time = time.time() - save_start_time  # Time taken to save results
 
+    # Total execution time
     execution_time = time.time() - start_time
 
+    # Write the execution times to a local file
+    execution_file_path = "/tmp/execution_time.txt"
+    with open(execution_file_path, "w") as f:
+        f.write(f"Spark initialization time (seconds): {spark_init_time:.2f}\n")
+        f.write(f"Data loading time (seconds): {data_load_time:.2f}\n")
+        f.write(f"PageRank computation time (seconds): {pagerank_time:.2f}\n")
+        f.write(f"Result saving time (seconds): {save_time:.2f}\n")
+        f.write(f"Total execution time (seconds): {execution_time:.2f}\n")
+
+    # Upload the execution time file to GCS
     time_output_path = f"{output_path}/execution_time.txt"
-    with open("/tmp/execution_time.txt", "w") as f:
-        f.write(f"Execution time (seconds): {execution_time:.2f}")
     spark.sparkContext._jvm.org.apache.hadoop.fs.FileSystem.get(
         spark._jsc.hadoopConfiguration()
-    ).copyFromLocalFile(False, True, "/tmp/execution_time.txt", time_output_path)
+    ).copyFromLocalFile(False, True, execution_file_path, time_output_path)
 
+    # Stop the Spark session
     spark.stop()
 EOF
 
